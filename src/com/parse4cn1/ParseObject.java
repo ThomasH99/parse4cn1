@@ -65,6 +65,8 @@ import java.util.Set;
  */
 public class ParseObject implements IPersistable {
 
+    private static final String KEY_ACL = "ACL"; //THJ
+
     private static final Logger LOGGER = Logger.getInstance();
 
     private String objectId;
@@ -91,6 +93,8 @@ public class ParseObject implements IPersistable {
         this.data = new Hashtable<String, Object>();
         this.operations = new Hashtable<String, ParseOperation>();
         this.dirtyKeys = new ArrayList<String>();
+        setDefaultValues(); //THJ - set default ACL
+        setDirty(false); //THJ - hack to avoid that setting the default ACL values above prevent fetchIfNeeded to work (since it tests that an object is not dirty before fetching)
         setEndPoint(toEndPoint(className));
     }
 
@@ -292,10 +296,12 @@ public class ParseObject implements IPersistable {
         }
 
         Object value = this.data.get(key);
-        if (!(value instanceof Double)) {
+//        if (!(value instanceof Double) {
+        if (!(value instanceof Double || value instanceof Integer)) { //THJ: needed otherwise numbers without '.' will not get returned as Double
             logGetValueError("getDouble", key, value);
             return null;
         }
+        if (value instanceof Integer) return ((Integer) value).doubleValue(); //THJ
         return (Double) value;
     }
 
@@ -313,11 +319,12 @@ public class ParseObject implements IPersistable {
         }
 
         Object value = this.data.get(key);
-        if (!(value instanceof Long)) {
+//        if (!(value instanceof Long)) {
+        if (!(value instanceof Long || value instanceof Integer)) { //THJ: Parse automatically stores small numbers as Integer
             logGetValueError("getLong", key, value);
             return null;
         }
-        return (Long) value;
+        return value instanceof Integer ? new Long((Integer) value) : (Long) value; //THJ: necessary since cannot cast int to long
     }
 
     /**
@@ -401,6 +408,10 @@ public class ParseObject implements IPersistable {
      * @return The retrieved object or null if there is no such {@code key}.
      */
     public Object get(String key) {
+
+        if (key.equals(KEY_ACL)) { //THJ
+            return getACL();
+        }
 
         if (!this.data.containsKey(key)) {
             return null;
@@ -559,12 +570,12 @@ public class ParseObject implements IPersistable {
             throw new IllegalArgumentException("value may not be null.");
         }
 
-        if (value instanceof IPersistable && ((IPersistable) value).isDirty()) {
-            LOGGER.error("Persistable object must be saved before being set on a ParseObject.");
-            throw new IllegalArgumentException(
-                    "Persistable object must be saved before being set on a ParseObject.");
-        }
-
+        //THJ: seems the below outcommented check is too strict, the error message exists only for files in Parse
+//        if (value instanceof IPersistable && ((IPersistable) value).isDirty()) {
+//            LOGGER.error("Persistable object must be saved before being set on a ParseObject.");
+//            throw new IllegalArgumentException(
+//                    "Persistable object must be saved before being set on a ParseObject.");
+//        }
         if (Parse.isReservedKey(key)) {
             LOGGER.error("reserved value for key: " + key);
             throw new IllegalArgumentException("reserved value for key: "
@@ -576,6 +587,42 @@ public class ParseObject implements IPersistable {
             throw new IllegalArgumentException("invalid type for value: "
                     + value.getClass().toString());
         }
+
+        //THJ - lines below an optimization to avoid saving objects that have not changed - ERROR doesn't work since euqals first compares for object identify
+//        if (value.equals(get(key))) {
+//            return;
+//        }
+
+        //THJ - lines below an optimization to avoid saving Strings to Parse server when the string value has not changed
+        if (value instanceof String) {
+            Object oldValue = get(key);
+            if (oldValue != null && oldValue instanceof String && ((String) value).equals((oldValue))) {
+                return;
+            }
+        }
+
+        //THJ - lines below an optimization to avoid saving Lists to Parse server when the content (the objects and their sequence) has not changed
+        //THJ: this optimizaiton doesn't work since the same list instance is used, instead optimize by only calling put() the list if actually changed
+//        if (value instanceof List) {
+//            Object oldValue = get(key);
+//            if (oldValue != null && oldValue instanceof List) {
+//                List oldList = (List) oldValue;
+//                List newList = (List) value;
+//                if (oldList.size() == newList.size()) {
+//                    //if same size, compare the elements:
+//                    boolean noChange = true;
+//                    for (int i = 0, size = oldList.size(); i < size; i++) {
+//                        if (!oldList.get(i).equals(newList.get(i))) {
+//                            noChange = false;
+//                            break; //exit loop on first difference
+//                        }
+//                    }
+//                    if (noChange) {
+//                        return; //all elements equal so don't save
+//                    }
+//                } //else: if different size, continue to performOperation
+//            }
+//        }
 
         performOperation(key, new SetFieldOperation(value));
     }
@@ -598,13 +645,14 @@ public class ParseObject implements IPersistable {
 
     @Override
     public boolean isDataAvailable() {
-        return (data != null) && (!data.isEmpty());
+//        return (data != null) && (!data.isEmpty()); //THJ
+        return ((data != null) && (!data.isEmpty())) && !((data.size()==1 && data.get(KEY_ACL)!=null)); //THJ - hack to avoid that seeting default values prevent fetchIfNeeded to fetch data
     }
 
     @Override
     public void save() throws ParseException {
 
-        if (!isDirty()) {
+        if (!isDirty() && objectId!=null) { //THJ: added "&& objectId!=null" otherwise a new created object is not saved, which may be necessary to create relation to it from another object
             Logger.getInstance().warn("Ignoring request to save unchanged/empty"
                     + " object");
             return;
@@ -624,7 +672,7 @@ public class ParseObject implements IPersistable {
 
     /**
      * Removes a key from this object's data if it exists.
-     * 
+     *
      * @param key The key to be removed.
      */
     public void remove(String key) {
@@ -644,7 +692,7 @@ public class ParseObject implements IPersistable {
 
     /**
      * Atomically decrements the number field associated with {@code key} by 1.
-     * 
+     *
      * @param key The key of the number field to decrement.
      */
     public void decrement(String key) {
@@ -653,7 +701,7 @@ public class ParseObject implements IPersistable {
 
     /**
      * Atomically increments the number field associated with {@code key} by 1.
-     * 
+     *
      * @param key The key of the number field to increment.
      */
     public void increment(String key) {
@@ -661,9 +709,9 @@ public class ParseObject implements IPersistable {
     }
 
     /**
-     * Atomically increments the number field associated with {@code key} by the 
+     * Atomically increments the number field associated with {@code key} by the
      * stated {@code amount}.
-     * 
+     *
      * @param key The key of the number field to increment.
      * @param amount The amount to increment the key's value.
      */
@@ -705,9 +753,9 @@ public class ParseObject implements IPersistable {
     }
 
     /**
-     * Encodes the data present in this object in a JSONObject that complies to 
-     * the Parse API specification. 
-     * 
+     * Encodes the data present in this object in a JSONObject that complies to
+     * the Parse API specification.
+     *
      * @return The JSON equivalent of this object as expected by Parse.
      * @throws ParseException If anything goes wrong.
      */
@@ -731,10 +779,10 @@ public class ParseObject implements IPersistable {
     }
 
     /**
-     * Checks the validity of this object's state just before a save operation 
+     * Checks the validity of this object's state just before a save operation
      * is performed. Sub-classes should override this method to implement class-
      * specific validation.
-     * 
+     *
      * @throws ParseException if anything goes wrong.
      */
     protected void validateSave() throws ParseException {
@@ -742,7 +790,7 @@ public class ParseObject implements IPersistable {
 
     /**
      * Saves this object.
-     * 
+     *
      * @param command The ParseCommand to be used to issue the save request.
      * @throws ParseException if anything goes wrong.
      */
@@ -769,8 +817,8 @@ public class ParseObject implements IPersistable {
 
     /**
      * Performs the specified ParseOperation on this object.
-     * 
-     * @param key The field to which the result of {@code operation} will be 
+     *
+     * @param key The field to which the result of {@code operation} will be
      * stored, if application.
      * @param operation The ParseOperation to be performed.
      */
@@ -801,16 +849,15 @@ public class ParseObject implements IPersistable {
     }
 
     /**
-     * Fetches this object with the data from the server. 
-     * Call this whenever you want the state of the object to reflect exactly
-     * what is on the server.
-     * 
+     * Fetches this object with the data from the server. Call this whenever you
+     * want the state of the object to reflect exactly what is on the server.
+     *
      * @param <T> The concrete type of ParseObject to be fetched.
      * @param className The name of the class associated with this Parse object.
-     * @param objectId The id of the object to be fetched. This is the same id 
+     * @param objectId The id of the object to be fetched. This is the same id
      * that was returned from the server when the object was created.
-     * @return The ParseObject that was fetched. 
-     * 
+     * @return The ParseObject that was fetched.
+     *
      * @throws ParseException if anything goes wrong.
      */
     public static <T extends ParseObject> T fetch(final String className,
@@ -836,28 +883,51 @@ public class ParseObject implements IPersistable {
     }
 
     /**
-     * Fetches this object's data from the server if it has not been fetched 
-     * (i.e. {@link #isDataAvailable()} and {@link #isDirty()} both return false).
-     * 
+     * Fetches this object's data from the server if it has not been fetched
+     * (i.e. {@link #isDataAvailable()} and {@link #isDirty()} both return
+     * false).
+     *
      * @param <T> The concrete type of ParseObject to be fetched.
-     * @return The ParseObject that was fetched or this object if the criteria 
+     * @return The ParseObject that was fetched or this object if the criteria
      * for fetching are not met.
-     * 
+     *
      * @throws ParseException if anything goes wrong.
      */
     public <T extends ParseObject> T fetchIfNeeded() throws ParseException {
-        if (!isDataAvailable() && !isDirty()) {
-            return fetch(getEndPoint(), getObjectId());
-        } else {
-            return (T) this;
-        }
+        //TODO when called on a just created Item, fetches all Items in Parse - test on objectID!=null before fetchin??
+        if (objectId!=null && !isDataAvailable() && !isDirty()) {
+//            return fetch(getEndPoint(), getObjectId()); //THJ - error returns a new ParseObject instead of updating the existing one
+//            T temp = fetch(getClassName(), getObjectId()); //THJ - only call with classNane since featch adds path
+            //THJ - below lines copied from fetch()
+            ParseGetCommand command
+                    = new ParseGetCommand(toEndPoint(className), objectId);
+            ParseResponse response = command.perform();
+            if (!response.isFailed()) {
+                JSONObject jsonResponse = response.getJsonObject();
+                if (jsonResponse == null) {
+                    throw response.getException();
+                }
+
+//            T obj = ParseRegistry.getObjectFactory(className).create(className);
+                setData(jsonResponse);
+                setEndPoint(toEndPoint(className));
+
+            } else {
+                throw response.getException();
+            }
+            //THJ - above lines copied from fetch()
+
+//        } else { //THJ
+        } //THJ
+        return (T) this;
     }
 
     /**
-     * Same as {@link #fetchIfNeeded()} with the option to get notified when 
-     * the fetch is completed. 
-     * 
-     * @param callback The objects whose {@link GetCallback#done(com.parse4cn1.ParseObject, com.parse4cn1.ParseException)}
+     * Same as {@link #fetchIfNeeded()} with the option to get notified when the
+     * fetch is completed.
+     *
+     * @param callback The objects whose
+     * {@link GetCallback#done(com.parse4cn1.ParseObject, com.parse4cn1.ParseException)}
      * method is invoked when the fetch operation is completed.
      */
     public final <T extends ParseObject> void fetchIfNeeded(GetCallback<T> callback) {
@@ -876,9 +946,9 @@ public class ParseObject implements IPersistable {
     }
 
     /**
-     * Sets the data for this ParseObject. This method is typically invoked after 
-     * this object's data is retrieved from the server.
-     * 
+     * Sets the data for this ParseObject. This method is typically invoked
+     * after this object's data is retrieved from the server.
+     *
      * @param jsonObject The JSON object containing the data to be set.
      */
     public void setData(JSONObject jsonObject) {
@@ -900,9 +970,9 @@ public class ParseObject implements IPersistable {
     }
 
     /**
-     * Resets this ParseObject's state. After invoking this method, the ParseObject 
-     * state is comparable to a newly constructed ParseObject 
-     * (see: {@link ParseObject#create(java.lang.String)}).
+     * Resets this ParseObject's state. After invoking this method, the
+     * ParseObject state is comparable to a newly constructed ParseObject (see:
+     * {@link ParseObject#create(java.lang.String)}).
      */
     protected void reset() {
         updatedAt = null;
@@ -945,4 +1015,73 @@ public class ParseObject implements IPersistable {
                 + "') but the value is of class type '"
                 + value.getClass() + "'");
     }
+
+/////////////////// THJ added below    
+    /* package for tests */ boolean isDataAvailable(String key) {
+//    synchronized (mutex) { //THJ
+//      return isDataAvailable() || estimatedData.containsKey(key);
+        return isDataAvailable() || data.containsKey(key);
+//    }
+    }
+
+    private void checkGetAccess(String key) {
+        if (!isDataAvailable(key)) {
+            throw new IllegalStateException(
+                    "ParseObject has no data for '" + key + "'. Call fetchIfNeeded() to get the data.");
+        }
+    }
+
+    /**
+     * Access the {@link ParseACL} governing this object.
+     */
+    public ParseACL getACL() {
+        return getACL(true);
+    }
+
+    private ParseACL getACL(boolean mayCopy) {
+//        synchronized (mutex) {
+        checkGetAccess(KEY_ACL);
+//            Object acl = estimatedData.get(KEY_ACL);
+        Object acl = data.get(KEY_ACL);
+        if (acl == null) {
+            return null;
+        }
+        if (!(acl instanceof ParseACL)) {
+            throw new RuntimeException("only ACLs can be stored in the ACL key");
+        }
+        if (mayCopy && ((ParseACL) acl).isShared()) {
+            ParseACL copy = ((ParseACL) acl).copy();
+//                estimatedData.put(KEY_ACL, copy);
+            data.put(KEY_ACL, copy);
+            return copy;
+        }
+        return (ParseACL) acl;
+//        }
+    }
+
+    /**
+     * Set the {@link ParseACL} governing this object.
+     */
+    public void setACL(ParseACL acl) {
+        put(KEY_ACL, acl);
+    }
+
+    /**
+     * Called when a non-pointer is being created to allow additional
+     * initialization to occur.
+     */
+    void setDefaultValues() {
+        if (needsDefaultACL() && ParseACL.getDefaultACL() != null) {
+            this.setACL(ParseACL.getDefaultACL());
+        }
+    }
+
+    /**
+     * Determines whether this object should get a default ACL. Override in
+     * subclasses to turn off default ACLs.
+     */
+    boolean needsDefaultACL() {
+        return true;
+    }
+
 }

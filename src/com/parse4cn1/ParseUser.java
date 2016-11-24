@@ -350,7 +350,8 @@ public class ParseUser extends ParseObject {
         super.performSave(command);
     }
     
-    protected void setSessionToken(String sessionToken) {
+//    protected void setSessionToken(String sessionToken) { //THJ
+    public void setSessionToken(String sessionToken) {
         this.sessionToken = sessionToken;
         current = this;
     }

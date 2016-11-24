@@ -313,9 +313,10 @@ public class Parse {
                 || ((value instanceof ParseFile))
                 || ((value instanceof ParseRelation))
                 || ((value instanceof ParseGeoPoint))
+                || ((value instanceof ParseACL)) //THJ
                 || ((value instanceof Date))
                 || ((value instanceof byte[]))
-                || ((value instanceof List))
+                || ((value instanceof List)) 
                 || ((value instanceof Map));
     }
 

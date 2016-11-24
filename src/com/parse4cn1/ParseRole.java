@@ -40,6 +40,11 @@ public class ParseRole extends ParseObject {
         super(ParseConstants.CLASS_NAME_ROLE);
     }
 
+    public ParseRole(String name) {
+        super(ParseConstants.CLASS_NAME_ROLE);
+        setName(name);
+    }
+
     public void setName(String name) {
         put("name", name);
     }

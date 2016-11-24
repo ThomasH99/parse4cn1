@@ -42,7 +42,7 @@ public class PointerEncodingStrategy extends PointerOrLocalIdEncodingStrategy {
     public JSONObject encodeRelatedObject(ParseObject object)  throws ParseException {
         if (object.getObjectId() == null) {
             throw new IllegalStateException(
-                    "unable to encode an association with an unsaved ParseObject");
+                    "unable to encode an association with an unsaved ParseObject "+object);
         }
         return super.encodeRelatedObject(object);
     }

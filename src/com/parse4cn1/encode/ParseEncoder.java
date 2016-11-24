@@ -24,6 +24,7 @@ import ca.weblite.codename1.json.JSONException;
 import ca.weblite.codename1.json.JSONObject;
 import com.codename1.util.Base64;
 import com.parse4cn1.Parse;
+import com.parse4cn1.ParseACL;
 import com.parse4cn1.ParseConstants;
 import com.parse4cn1.ParseException;
 import com.parse4cn1.ParseFile;
@@ -141,6 +142,10 @@ public class ParseEncoder {
             return ((ParseQuery.RelationConstraint) value).encode(objectEncoder);
         }
 
+        if (value instanceof ParseACL) { //THJ:
+            return ((ParseACL) value).encode(objectEncoder);
+        }
+
         if (value instanceof ParseFile) {
             ParseFile file = (ParseFile) value;
             JSONObject output = new JSONObject();
@@ -170,7 +175,9 @@ public class ParseEncoder {
             return value;
         }
 
-        LOGGER.error("Object type not decoded: " + value.getClass().getCanonicalName());
-        throw new IllegalArgumentException("Invalid type for ParseObject: " + value.getClass().toString());
+//        LOGGER.error("Object type not decoded: " + value.getClass().getCanonicalName()); //THJ
+        LOGGER.error("Object type not decoded: " + value==null?"null":value.getClass().getCanonicalName()); //THJ
+//        throw new IllegalArgumentException("Invalid type for ParseObject: " + value.getClass().toString());
+        throw new IllegalArgumentException("Invalid type for ParseObject: " + value==null?"null":value.getClass().toString()); //THJ
     }
 }
