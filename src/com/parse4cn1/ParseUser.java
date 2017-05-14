@@ -74,7 +74,7 @@ public class ParseUser extends ParseObject {
                     "Cannot delete a ParseUser that is not authenticated.");
         }
         
-        ParseCommand command = new ParseDeleteCommand(getEndPoint(), getObjectId());
+        ParseCommand command = new ParseDeleteCommand(getEndPoint(), getObjectIdP());
         command.addHeader(ParseConstants.HEADER_SESSION_TOKEN, getSessionToken());
         ParseResponse response = command.perform();
         if (response.isFailed()) {
@@ -200,7 +200,7 @@ public class ParseUser extends ParseObject {
      * @return {@code true} if this user is authenticated.
      */
     public boolean isAuthenticated() {
-        return (getSessionToken() != null && getObjectId() != null);
+        return (getSessionToken() != null && getObjectIdP() != null);
     }
     
     /**
@@ -225,7 +225,7 @@ public class ParseUser extends ParseObject {
                     "Password cannot be missing or blank");
         }
 
-        if (getObjectId() != null) {
+        if (getObjectIdP() != null) {
             LOGGER.error("Cannot sign up a user that has already signed up.");
             throw new IllegalArgumentException(
                     "Cannot sign up a user that has already signed up.");
@@ -331,13 +331,13 @@ public class ParseUser extends ParseObject {
     @Override
     protected void validateSave() throws ParseException {
 
-        if (getObjectId() == null) {
+        if (getObjectIdP() == null) {
             LOGGER.error("Cannot save a ParseUser that is not yet signed up.");
             throw new ParseException(ParseException.MISSING_OBJECT_ID,
                     "Cannot save a ParseUser that is not yet signed up.");
         }
 
-        if ((!isAuthenticated()) && dirty && getObjectId() != null) {
+        if ((!isAuthenticated()) && dirty && getObjectIdP() != null) {
             LOGGER.error("Cannot save a ParseUser that is not authenticated.");
             throw new ParseException(ParseException.SESSION_MISSING,
                     "Cannot save a ParseUser that is not authenticated.");

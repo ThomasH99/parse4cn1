@@ -58,7 +58,7 @@ public class ParseFileTest extends BaseParseTest {
         gameScore.save();
 
         final ParseObject retrievedGameScore = ParseObject.fetch(classGameScore,
-                gameScore.getObjectId());
+                gameScore.getObjectIdP());
         final ParseFile retrievedFile = retrievedGameScore.getParseFile("text");
         assertTrue(Arrays.equals(textFile.getData(), retrievedFile.getData()),
                 "Saved data should match retrieved file data");

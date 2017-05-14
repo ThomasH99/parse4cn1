@@ -66,12 +66,12 @@ public class RelationOperation<T extends ParseObject> implements ParseOperation 
                         "All objects in a relation must be of the same class.");
                 }
 
-                if (object.getObjectId() == null || 
-                        uniqueRelations.containsKey(object.getObjectId())) {
+                if (object.getObjectIdP() == null || 
+                        uniqueRelations.containsKey(object.getObjectIdP())) {
                     throw new IllegalArgumentException(
                         "All objects in a relation must have a unique non-null objectId");
                 }
-                uniqueRelations.put(object.getObjectId(), object);
+                uniqueRelations.put(object.getObjectIdP(), object);
             }
         }
 

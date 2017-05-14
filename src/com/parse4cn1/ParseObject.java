@@ -21,6 +21,7 @@ package com.parse4cn1;
 import ca.weblite.codename1.json.JSONArray;
 import ca.weblite.codename1.json.JSONException;
 import ca.weblite.codename1.json.JSONObject;
+import com.codename1.io.Externalizable;
 import com.parse4cn1.Parse.IPersistable;
 import com.parse4cn1.callback.GetCallback;
 import com.parse4cn1.callback.ParseCallback;
@@ -41,6 +42,9 @@ import com.parse4cn1.operation.SetFieldOperation;
 import com.parse4cn1.util.Logger;
 import com.parse4cn1.encode.ParseDecoder;
 import com.parse4cn1.util.ParseRegistry;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,6 +55,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.codename1.io.Util; //THJ
 
 /**
  * The ParseObject is a local representation of data that can be saved and
@@ -63,7 +68,7 @@ import java.util.Set;
  * The basic workflow for accessing existing data is to use a {@link ParseQuery}
  * to specify which existing data to retrieve.
  */
-public class ParseObject implements IPersistable {
+public class ParseObject implements IPersistable, Externalizable {
 
     private static final String KEY_ACL = "ACL"; //THJ
 
@@ -80,6 +85,61 @@ public class ParseObject implements IPersistable {
 
     private Date updatedAt;
     private Date createdAt;
+
+    @Override
+    public int getVersion() {
+        return 0;
+    }
+
+    @Override
+//    abstract public String getObjectId();
+    public String getObjectId() {
+        return "ParseObject";
+    }
+
+    private static boolean doNotExternalizeObjectDataForReferencesParseObjects;
+
+    @Override
+    public void externalize(DataOutputStream out) throws IOException {
+        Util.writeObject(objectId, out);
+        Util.writeObject(className, out);
+        Util.writeObject(endPoint, out);
+
+//        Util.writeObject(dirty,out);
+//        if (this instanceof ExternalizeObjIdRefs)
+        if (doNotExternalizeObjectDataForReferencesParseObjects) { //first ParseObject encountered will be externalized (saved locally) others will only have their objectId etc saved
+            Util.writeObject(false, out);
+        } else {
+            doNotExternalizeObjectDataForReferencesParseObjects = true; //for all further writes
+            Util.writeObject(true, out);
+            Util.writeObject(data, out); //externalize data for this object, but not for referenced ParseObjects
+            doNotExternalizeObjectDataForReferencesParseObjects = false;
+//            Util.writeObject(getObjectId(), out);
+        }
+//        Util.writeObject(operations,out);
+//        Util.writeObject(dirtyKeys,out);
+
+        Util.writeObject(updatedAt, out);
+        Util.writeObject(createdAt, out);
+    }
+
+    @Override
+    public void internalize(int version, DataInputStream in) throws IOException {
+        objectId = (String) Util.readObject(in);
+        className = (String) Util.readObject(in);
+        endPoint = (String) Util.readObject(in);
+
+//        dirty = (Boolean) Util.readObject(in);
+        boolean parseObjectDataExternalized = (Boolean) Util.readObject(in);
+        if (parseObjectDataExternalized) {
+            data = (Map<String, Object>) Util.readObject(in);
+        }
+//        operations = (Map<String, ParseOperation> ) Util.readObject(in);
+//        dirtyKeys  = (List<String> ) Util.readObject(in);
+
+        updatedAt = (Date) Util.readObject(in);
+        createdAt = (Date) Util.readObject(in);
+    }
 
     protected ParseObject(String className) {
 
@@ -128,7 +188,7 @@ public class ParseObject implements IPersistable {
      *
      * @return This Parse object's Id.
      */
-    public String getObjectId() {
+    public String getObjectIdP() {
         return this.objectId;
     }
 
@@ -301,7 +361,9 @@ public class ParseObject implements IPersistable {
             logGetValueError("getDouble", key, value);
             return null;
         }
-        if (value instanceof Integer) return ((Integer) value).doubleValue(); //THJ
+        if (value instanceof Integer) {
+            return ((Integer) value).doubleValue(); //THJ
+        }
         return (Double) value;
     }
 
@@ -467,9 +529,9 @@ public class ParseObject implements IPersistable {
      * object.
      */
     public boolean hasSameId(ParseObject other) {
-        return (getClassName() != null) && (getObjectId() != null)
+        return (getClassName() != null) && (getObjectIdP() != null)
                 && (getClassName().equals(other.getClassName()))
-                && (getObjectId().equals(other.getObjectId()));
+                && (getObjectIdP().equals(other.getObjectIdP()));
     }
 
     /**
@@ -592,7 +654,6 @@ public class ParseObject implements IPersistable {
 //        if (value.equals(get(key))) {
 //            return;
 //        }
-
         //THJ - lines below an optimization to avoid saving Strings to Parse server when the string value has not changed
         if (value instanceof String) {
             Object oldValue = get(key);
@@ -623,7 +684,6 @@ public class ParseObject implements IPersistable {
 //                } //else: if different size, continue to performOperation
 //            }
 //        }
-
         performOperation(key, new SetFieldOperation(value));
     }
 
@@ -646,13 +706,13 @@ public class ParseObject implements IPersistable {
     @Override
     public boolean isDataAvailable() {
 //        return (data != null) && (!data.isEmpty()); //THJ
-        return ((data != null) && (!data.isEmpty())) && !((data.size()==1 && data.get(KEY_ACL)!=null)); //THJ - hack to avoid that seeting default values prevent fetchIfNeeded to fetch data
+        return ((data != null) && (!data.isEmpty())) && !((data.size() == 1 && data.get(KEY_ACL) != null)); //THJ - hack to avoid that seeting default values prevent fetchIfNeeded to fetch data
     }
 
     @Override
     public void save() throws ParseException {
 
-        if (!isDirty() && objectId!=null) { //THJ: added "&& objectId!=null" otherwise a new created object is not saved, which may be necessary to create relation to it from another object
+        if (!isDirty() && objectId != null) { //THJ: added "&& objectId!=null" otherwise a new created object is not saved, which may be necessary to create relation to it from another object
             Logger.getInstance().warn("Ignoring request to save unchanged/empty"
                     + " object");
             return;
@@ -664,7 +724,7 @@ public class ParseObject implements IPersistable {
         if (objectId == null) {
             command = new ParsePostCommand(getEndPoint());
         } else {
-            command = new ParsePutCommand(getEndPoint(), getObjectId());
+            command = new ParsePutCommand(getEndPoint(), getObjectIdP());
         }
 
         performSave(command);
@@ -737,13 +797,13 @@ public class ParseObject implements IPersistable {
      */
     public void delete() throws ParseException {
 
-        if (getObjectId() == null) {
+        if (getObjectIdP() == null) {
             LOGGER.error("Attempting to delete an object without an objectId.");
             throw new ParseException(ParseException.MISSING_OBJECT_ID,
                     "Attempting to delete an object without an objectId.");
         }
 
-        ParseCommand command = new ParseDeleteCommand(getEndPoint(), getObjectId());
+        ParseCommand command = new ParseDeleteCommand(getEndPoint(), getObjectIdP());
         ParseResponse response = command.perform();
         if (response.isFailed()) {
             throw response.getException();
@@ -895,7 +955,7 @@ public class ParseObject implements IPersistable {
      */
     public <T extends ParseObject> T fetchIfNeeded() throws ParseException {
         //TODO when called on a just created Item, fetches all Items in Parse - test on objectID!=null before fetchin??
-        if (objectId!=null && !isDataAvailable() && !isDirty()) {
+        if (objectId != null && !isDataAvailable() && !isDirty()) {
 //            return fetch(getEndPoint(), getObjectId()); //THJ - error returns a new ParseObject instead of updating the existing one
 //            T temp = fetch(getClassName(), getObjectId()); //THJ - only call with classNane since featch adds path
             //THJ - below lines copied from fetch()

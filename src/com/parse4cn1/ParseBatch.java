@@ -98,8 +98,8 @@ public class ParseBatch {
     public ParseBatch addObjects(final Collection<? extends ParseObject> objects,
             final EBatchOpType opType) throws ParseException {
 
-//        final String urlPath =  StringUtil.replaceAll(Util.getURLPath(Parse.getApiEndpoint()), "/", ""); //THJ commented out to prevent compile errors while waiting to switch to new version of parse4cn1
-//        final String pathPrefix = "/" + (!Parse.isEmpty(urlPath) ? urlPath + "/" : "");
+        final String urlPath =  StringUtil.replaceAll(Util.getURLPath(Parse.getApiEndpoint()), "/", ""); //THJ commented out to prevent compile errors while waiting to switch to new version of parse4cn1
+        final String pathPrefix = "/" + (!Parse.isEmpty(urlPath) ? urlPath + "/" : "");
 
         final String method = opTypeToHttpMethod(opType);
         
@@ -108,7 +108,7 @@ public class ParseBatch {
             final JSONObject objData = new JSONObject();
             try {
                 objData.put("method", method);
-//                objData.put("path", pathPrefix + getObjectPath(object, opType)); //THJ commented out to prevent compile errors while waiting to switch to new version of parse4cn1
+                objData.put("path", pathPrefix + getObjectPath(object, opType)); //THJ commented out to prevent compile errors while waiting to switch to new version of parse4cn1
                 objData.put("body", object.getParseData());
             } catch (JSONException ex) {
                 throw new ParseException(ParseException.INVALID_JSON, 
@@ -213,7 +213,7 @@ public class ParseBatch {
     private static String getObjectPath(final ParseObject object, final EBatchOpType opType) {
         String endpoint = object.getEndPoint();
         if (opType != EBatchOpType.CREATE) {
-            endpoint += "/" + object.getObjectId();
+            endpoint += "/" + object.getObjectIdP();
         }
 
         return endpoint;
@@ -236,13 +236,13 @@ public class ParseBatch {
         switch (opType) {
             case DELETE: // Deliberate fallthrough
             case UPDATE:
-                if (object.getObjectId() == null) {
+                if (object.getObjectIdP() == null) {
                     throw new ParseException(ParseException.OPERATION_FORBIDDEN,
                             "Cannot update or delete an object without an objectId.");
                 }
                 break;
             case CREATE:
-                if (object.getObjectId() != null) {
+                if (object.getObjectIdP() != null) {
                     throw new ParseException(ParseException.OPERATION_FORBIDDEN,
                             "Cannot create an object already having an objectId.");
                 }

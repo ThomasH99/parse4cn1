@@ -322,12 +322,12 @@ public class ParseQueryTest extends BaseParseTest {
                     && input.getInt(fieldScore) >= 1000 && input.getInt(fieldScore) <= 3000) {
                 boolean found = false;
                 for (ParseObject output : results) {
-                    if (output.getObjectId().equals(input.getObjectId())) {
+                    if (output.getObjectIdP().equals(input.getObjectIdP())) {
                         found = true;
                         break;
                     }
                 }
-                assertTrue(found, "Input with objectId " + input.getObjectId()
+                assertTrue(found, "Input with objectId " + input.getObjectIdP()
                         + " is expected in output based on $lte + $gte query "
                         + "constraints but not found");
             }
@@ -354,12 +354,12 @@ public class ParseQueryTest extends BaseParseTest {
             if (allowedScores.contains(input.getInt(fieldScore))) {
                 boolean found = false;
                 for (ParseObject output : results) {
-                    if (output.getObjectId().equals(input.getObjectId())) {
+                    if (output.getObjectIdP().equals(input.getObjectIdP())) {
                         found = true;
                         break;
                     }
                 }
-                assertTrue(found, "Input with objectId " + input.getObjectId()
+                assertTrue(found, "Input with objectId " + input.getObjectIdP()
                         + " is expected in output based on $in query constraints "
                         + "but not found");
             }
@@ -387,12 +387,12 @@ public class ParseQueryTest extends BaseParseTest {
             if (!allowedPlayers.contains(input.getString(fieldPlayerName))) {
                 boolean found = false;
                 for (ParseObject output : results) {
-                    if (output.getObjectId().equals(input.getObjectId())) {
+                    if (output.getObjectIdP().equals(input.getObjectIdP())) {
                         found = true;
                         break;
                     }
                 }
-                assertTrue(found, "Input with objectId " + input.getObjectId()
+                assertTrue(found, "Input with objectId " + input.getObjectIdP()
                         + " is expected in output based on $nin query constraints "
                         + "but not found");
             }
@@ -418,12 +418,12 @@ public class ParseQueryTest extends BaseParseTest {
             if (input.getInt(fieldScore) != null) {
                 boolean found = false;
                 for (ParseObject output : results) {
-                    if (output.getObjectId().equals(input.getObjectId())) {
+                    if (output.getObjectIdP().equals(input.getObjectIdP())) {
                         found = true;
                         break;
                     }
                 }
-                assertTrue(found, "Input with objectId " + input.getObjectId()
+                assertTrue(found, "Input with objectId " + input.getObjectIdP()
                         + " is expected in output based on $exists=true query constraints "
                         + "but not found");
             }
@@ -449,12 +449,12 @@ public class ParseQueryTest extends BaseParseTest {
             if (input.getInt(fieldScore) == null) {
                 boolean found = false;
                 for (ParseObject output : results) {
-                    if (output.getObjectId().equals(input.getObjectId())) {
+                    if (output.getObjectIdP().equals(input.getObjectIdP())) {
                         found = true;
                         break;
                     }
                 }
-                assertTrue(found, "Input with objectId " + input.getObjectId()
+                assertTrue(found, "Input with objectId " + input.getObjectIdP()
                         + " is expected in output based on $exists=false query "
                         + "constraints but not found");
             }
@@ -622,12 +622,12 @@ public class ParseQueryTest extends BaseParseTest {
             boolean found = false;
             for (int i = skip; i < gameScoreObjects.size() - 1; ++i) {
                 final ParseObject input = gameScoreObjects.get(i);
-                if (output.getObjectId().equals(input.getObjectId())) {
+                if (output.getObjectIdP().equals(input.getObjectIdP())) {
                     found = true;
                     break;
                 }
             }
-            assertTrue(found, "Output with objectId " + output.getObjectId()
+            assertTrue(found, "Output with objectId " + output.getObjectIdP()
                     + " returned in result (non-skipped objects) but not expected");
         }
     }
@@ -649,7 +649,7 @@ public class ParseQueryTest extends BaseParseTest {
             assertTrue(output.has(fieldScore) || output.has(fieldPlayerName),
                     "fields '" + fieldScore + "' and/or '" + fieldPlayerName
                     + "' are the only fields expected in output with objectId "
-                    + output.getObjectId() + " but found " + output.keySet());
+                    + output.getObjectIdP() + " but found " + output.keySet());
         }
     }
 
@@ -681,7 +681,7 @@ public class ParseQueryTest extends BaseParseTest {
 
     private ParseObject getPostByCommentId(final String commentId) {
         for (ParseObject comment : commentToPostMapping.keySet()) {
-            if (comment.getObjectId().equals(commentId)) {
+            if (comment.getObjectIdP().equals(commentId)) {
                 return commentToPostMapping.get(comment);
             }
         }
@@ -696,10 +696,10 @@ public class ParseQueryTest extends BaseParseTest {
             final ParseObject post = commentToPostMapping.get(comment);
             assertNotNull(post, "Post corresponding to comment not found");
             commentQuery.whereEqualTo(fieldPost, post);
-            assertNotNull(commentQuery.get(comment.getObjectId()),
-                    "Comment " + comment.getObjectId()
+            assertNotNull(commentQuery.get(comment.getObjectIdP()),
+                    "Comment " + comment.getObjectIdP()
                     + " should be among results for the post with id "
-                    + post.getObjectId());
+                    + post.getObjectIdP());
         }
     }
 
@@ -716,7 +716,7 @@ public class ParseQueryTest extends BaseParseTest {
 
         assertTrue(results.size() > 0, "$inQuery query should return results");
         for (ParseObject comment : results) {
-            final ParseObject post = getPostByCommentId(comment.getObjectId());
+            final ParseObject post = getPostByCommentId(comment.getObjectIdP());
             assertNotNull(post, "Post matching comment must exist");
             assertNotNull(post.getString(fieldImage),
                     "All results should belong to a post with an image field");
@@ -729,7 +729,7 @@ public class ParseQueryTest extends BaseParseTest {
 
         assertTrue(results.size() > 0, "$notInQuery query should return results");
         for (ParseObject comment : results) {
-            final ParseObject post = getPostByCommentId(comment.getObjectId());
+            final ParseObject post = getPostByCommentId(comment.getObjectIdP());
             assertNotNull(post, "Post matching comment must exist");
             assertNull(post.getString(fieldImage),
                     "All results should belong to a post without an image field");

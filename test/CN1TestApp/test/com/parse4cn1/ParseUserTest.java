@@ -76,12 +76,12 @@ public class ParseUserTest extends BaseParseTest {
         assertNull(user.getCreatedAt());
         assertNull(user.getUpdatedAt());
         assertNull(user.getSessionToken());
-        assertNull(user.getObjectId());
+        assertNull(user.getObjectIdP());
         
         user.put(phone, "415-392-0202");
         user.signUp();
         
-        assertNotNull(user.getObjectId(), 
+        assertNotNull(user.getObjectIdP(), 
                  "Object id should be set upon successful signup");
         assertNotNull(user.getCreatedAt(), 
                 "Creation time should be set upon successful signup");
@@ -95,7 +95,7 @@ public class ParseUserTest extends BaseParseTest {
         
         assertNotNull(loggedIn.getSessionToken(),
                 "Session token is created upon successful login");
-        assertEqual(user.getObjectId(), loggedIn.getObjectId(),
+        assertEqual(user.getObjectIdP(), loggedIn.getObjectIdP(),
                 "Object id is preserved after sign up");
         assertEqual(user.getString(phone), loggedIn.getString(phone),
                 "User data is preserved");
@@ -123,7 +123,7 @@ public class ParseUserTest extends BaseParseTest {
                 emailVerified + " field should be defined but false");
         
         // Retrieve by object id
-        ParseUser userById = ParseUser.fetch(loggedIn.getClassName(), loggedIn.getObjectId());
+        ParseUser userById = ParseUser.fetch(loggedIn.getClassName(), loggedIn.getObjectIdP());
         assertEqual(loggedIn.getString(phone),          userById.getString(phone));
         assertEqual(loggedIn.getBoolean(emailVerified), userById.getBoolean(emailVerified));
         assertEqual(loggedIn.getString(email),          userById.getString(email));

@@ -36,7 +36,7 @@ import java.io.OutputStream;
 import java.util.Iterator;
 
 /**
- * This class encapsulates a network request to be made to the Parse REST API 
+ * This class encapsulates a network request to be made to the Parse REST API
  * using any of the supported HTTP verbs.
  */
 public abstract class ParseCommand {
@@ -47,16 +47,16 @@ public abstract class ParseCommand {
     private final JSONObject data = new JSONObject();
     private final JSONObject headers = new JSONObject();
     private ProgressCallback progressCallback;
-    
+
     protected boolean addJson;
 
     /**
-     * Sets up the network connection request that will be issued when performing 
-     * this operation. Typically, that involves specifying the HTTP verb,
-     * headers, url, content type, etc.
+     * Sets up the network connection request that will be issued when
+     * performing this operation. Typically, that involves specifying the HTTP
+     * verb, headers, url, content type, etc.
      * <p>
      * This method is invoked by {@link #perform()}.
-     * 
+     *
      * @param request The request to be initialized.
      * @throws ParseException if anything goes wrong.
      */
@@ -64,8 +64,9 @@ public abstract class ParseCommand {
 
     /**
      * Performs this ParseCommand by issuing a synchronous network request.
+     *
      * @return The response received if the request was successful.
-     * 
+     *
      * @throws ParseException if anything goes wrong.
      */
     public ParseResponse perform() throws ParseException {
@@ -78,7 +79,7 @@ public abstract class ParseCommand {
         final ParseResponse response = new ParseResponse();
         final ConnectionRequest request = createConnectionRequest(response);
         setUpRequest(request);
-        
+
         if (progressCallback != null) {
             NetworkManager.getInstance().addProgressListener(new ActionListener() {
 
@@ -99,15 +100,15 @@ public abstract class ParseCommand {
         Iterator keys = headers.keys();
         while (keys.hasNext()) {
             final String key = (String) keys.next();
-           
-             try {
+
+            try {
                 request.addRequestHeader(key, (String) headers.get(key));
             } catch (JSONException ex) {
                 Logger.getInstance().error("Error parsing header '" + key + "' + Error: " + ex);
                 throw new ParseException(ParseException.INVALID_JSON, ParseException.ERR_PREPARING_REQUEST, ex);
             }
         }
-        
+
         keys = data.keys();
         while (keys.hasNext()) {
             final String key = (String) keys.next();
@@ -125,16 +126,16 @@ public abstract class ParseCommand {
         long commandReceived = System.currentTimeMillis();
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Parse " + request.getHttpMethod() + " Command took " 
+            LOGGER.debug("Parse " + request.getHttpMethod() + " Command took "
                     + (commandReceived - commandStart) + " milliseconds\n");
         }
 
         return response;
     }
-    
+
     /**
      * Add the HTTP header field associated with the provided key and value.
-     * 
+     *
      * @param key The header's key.
      * @param value The header's value.
      * @throws ParseException if anything goes wrong.
@@ -150,10 +151,10 @@ public abstract class ParseCommand {
 
     /**
      * Creates and initializes a network connection request.
-     * 
-     * @param response The response associated with the request. This response 
+     *
+     * @param response The response associated with the request. This response
      * object will be updated with the error information if the request fails.
-     * 
+     *
      * @return The created connection request.
      */
     protected ConnectionRequest createConnectionRequest(final ParseResponse response) {
@@ -166,8 +167,8 @@ public abstract class ParseCommand {
 
             @Override
             protected void handleException(Exception err) {
-                response.setConnectionError(new ParseException(ParseException.CONNECTION_FAILED, 
-                    ParseException.ERR_NETWORK, err));
+                response.setConnectionError(new ParseException(ParseException.CONNECTION_FAILED,
+                        ParseException.ERR_NETWORK, err));
             }
 
             @Override
@@ -189,26 +190,33 @@ public abstract class ParseCommand {
     }
 
     /**
-     * Adds the default headers (e.g., {@link ParseConstants#HEADER_APPLICATION_ID}
-     * and {@link ParseConstants#HEADER_CLIENT_KEY}) associated with Parse REST API calls.
-     * 
-     * @param addJson If true, the corresponding content-type header field is also set.
+     * Adds the default headers (e.g.,
+     * {@link ParseConstants#HEADER_APPLICATION_ID} and
+     * {@link ParseConstants#HEADER_CLIENT_KEY}) associated with Parse REST API
+     * calls.
+     *
+     * @param addJson If true, the corresponding content-type header field is
+     * also set.
      * @throws ParseException if anything goes wrong.
      */
     protected void setupDefaultHeaders(boolean addJson) throws ParseException {
         try {
+            addJson = true; //THJ - parse.server always need headers
             headers.put(ParseConstants.HEADER_APPLICATION_ID, Parse.getApplicationId());
             headers.put(ParseConstants.HEADER_CLIENT_KEY, Parse.getClientKey());
             if (addJson) {
                 headers.put(ParseConstants.HEADER_CONTENT_TYPE, ParseConstants.CONTENT_TYPE_JSON);
             }
-            if (!data.has(ParseConstants.FIELD_SESSION_TOKEN) && ParseUser.getCurrent() != null) {
+            if (false && !data.has(ParseConstants.FIELD_SESSION_TOKEN) && ParseUser.getCurrent() != null) { //THJ "false &&" test removing sessionToken from URI
                 data.put(ParseConstants.FIELD_SESSION_TOKEN, ParseUser.getCurrent().getSessionToken());
             }
-            if (data.has(ParseConstants.FIELD_SESSION_TOKEN)) {
-                headers.put(ParseConstants.HEADER_SESSION_TOKEN,
-                        data.getString(ParseConstants.FIELD_SESSION_TOKEN));
-            } 
+//            if (data.has(ParseConstants.FIELD_SESSION_TOKEN)) {
+//                headers.put(ParseConstants.HEADER_SESSION_TOKEN,
+//                        data.getString(ParseConstants.FIELD_SESSION_TOKEN));
+//            }
+            if (ParseUser.getCurrent() != null && ParseUser.getCurrent().isAuthenticated()) { //THJ: copied from parse4cn1 V3.0
+                headers.put(ParseConstants.HEADER_SESSION_TOKEN, ParseUser.getCurrent().getSessionToken());
+            }
         } catch (JSONException ex) {
             throw new ParseException(ParseException.INVALID_JSON, ParseException.ERR_PREPARING_REQUEST, ex);
         }
@@ -216,10 +224,11 @@ public abstract class ParseCommand {
 
     /**
      * Create a Parse API URL using the provided data.
-     * 
+     *
      * @param endPoint The end point
      * @param objectId The optional objectId
-     * @return The Parse API URL of the format {@code https://api.parse.com/<endpoint>[/<objectId>]}.
+     * @return The Parse API URL of the format
+     * {@code https://api.parse.com/<endpoint>[/<objectId>]}.
      */
     static protected String getUrl(final String endPoint, final String objectId) {
         String url = Parse.getParseAPIUrl(endPoint) + (objectId != null ? "/" + objectId : "");
@@ -233,7 +242,7 @@ public abstract class ParseCommand {
 
     /**
      * Sets the message body data for the HTTP request.
-     * 
+     *
      * @param data The message body to be set.
      * @throws ParseException if anything goes wrong.
      */
@@ -247,7 +256,7 @@ public abstract class ParseCommand {
 
     /**
      * Adds the specified key-value pair as an argument to the HTTP request.
-     * 
+     *
      * @param key The key of the argument.
      * @param value The value for {@code key}.
      * @throws ParseException if anything goes wrong.
@@ -259,13 +268,13 @@ public abstract class ParseCommand {
             throw new ParseException(ParseException.INVALID_JSON, ParseException.ERR_PREPARING_REQUEST, ex);
         }
     }
-    
+
     /**
-     * Sets a callback to be notified of the progress of this command when it 
-     * is performed.
-     * 
-     * @param progressCallback The callback to be set. It will replace any previously 
-     * set callback.
+     * Sets a callback to be notified of the progress of this command when it is
+     * performed.
+     *
+     * @param progressCallback The callback to be set. It will replace any
+     * previously set callback.
      */
     public void setProgressCallback(final ProgressCallback progressCallback) {
         this.progressCallback = progressCallback;

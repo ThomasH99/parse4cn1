@@ -153,7 +153,7 @@ public class ParseRelationTest extends BaseParseTest {
                "__op type is pointer");
        assertEqual(report.getClassName(), object.getString(ParseConstants.FIELD_CLASSNAME),
                "Query class name is parent's class name");
-       assertEqual(report.getObjectId(), object.getString(ParseConstants.FIELD_OBJECT_ID),
+       assertEqual(report.getObjectIdP(), object.getString(ParseConstants.FIELD_OBJECT_ID),
                "Query object id is parent's object id");
     }
 

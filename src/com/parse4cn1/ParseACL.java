@@ -18,9 +18,14 @@ package com.parse4cn1;
 import java.util.HashMap;
 import ca.weblite.codename1.json.JSONException;
 import ca.weblite.codename1.json.JSONObject;
+import com.codename1.io.Externalizable;
+import com.codename1.io.Util;
 import com.parse4cn1.encode.IParseObjectEncodingStrategy;
 import com.parse4cn1.util.Logger;
 import com.parse4cn1.encode.ParseDecoder;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Map;
 //import java.util.concurrent.atomic.AtomicReference;
 
@@ -33,13 +38,15 @@ import java.util.Map;
  * particular object but only a particular set of users could write to that
  * object.
  */
-public class ParseACL {
+public class ParseACL implements Externalizable {
 
     private static final String PUBLIC_KEY = "*";
     private final static String UNRESOLVED_KEY = "*unresolved";
     private static final String KEY_ROLE_PREFIX = "role:";
     private static final String UNRESOLVED_USER_JSON_KEY = "unresolvedUser";
     private static final Logger LOGGER = Logger.getInstance(); //THJ, copied from parse4cn1.ParseObject.java
+    public static final String CLASS_NAME = "ParseACL"; //THJ
+
 
 //    private AtomicReference<ParseDefaultACLController> defaultACLController = new AtomicReference<>(); //THJ, copied from ParseCorePlugins.java
 //    
@@ -50,93 +57,124 @@ public class ParseACL {
 //    }
 //    return defaultACLController.get();
 //  }
-    private static class Permissions {
-
-        private static final String READ_PERMISSION = "read";
-        private static final String WRITE_PERMISSION = "write";
-
-        private final boolean readPermission;
-        private final boolean writePermission;
-
-        /* package */ Permissions(boolean readPermission, boolean write) {
-            this.readPermission = readPermission;
-            this.writePermission = write;
-        }
-
-        /* package */ Permissions(Permissions permissions) {
-            this.readPermission = permissions.readPermission;
-            this.writePermission = permissions.writePermission;
-        }
-
-//        /* package */ JSONObject toJSONObject() { //THJ
-//            JSONObject json = new JSONObject();
+//    private static class Permissions implements Externalizable { //THJ
+//     public static class Permissions implements Externalizable { //THJ
 //
+//        public static final String CLASS_NAME_PARSE_PERMISSIONS = "Parse.Permissions";
+//        private static final String READ_PERMISSION = "read";
+//        private static final String WRITE_PERMISSION = "write";
+//
+////        private final boolean readPermission;
+////        private final boolean writePermission;
+//        private boolean readPermission; //THJ
+//        private boolean writePermission; //THJ
+//
+//        /* package */ Permissions(boolean readPermission, boolean write) {
+//            this.readPermission = readPermission;
+//            this.writePermission = write;
+//        }
+//
+//        /* package */ Permissions(Permissions permissions) {
+//            this.readPermission = permissions.readPermission;
+//            this.writePermission = permissions.writePermission;
+//        }
+//        
+//        Permissions() {
+//            
+//        }
+//
+//        @Override
+//        public int getVersion() {
+//            return 0;
+//        }
+//
+//        @Override
+//        public void externalize(DataOutputStream out) throws IOException {
+//            Util.writeObject(this.readPermission, out);
+//            Util.writeObject(this.writePermission, out);
+//        }
+//
+//        @Override
+//        public void internalize(int version, DataInputStream in) throws IOException {
+//            this.readPermission = (Boolean) Util.readObject(in);
+//            this.writePermission = (Boolean) Util.readObject(in);
+//        }
+//
+//        @Override
+//        public String getObjectId() {
+//            return CLASS_NAME_PARSE_PERMISSIONS;
+//        }
+//
+////        /* package */ JSONObject toJSONObject() { //THJ
+////            JSONObject json = new JSONObject();
+////
+////            try {
+////                if (readPermission) {
+////                    json.put(READ_PERMISSION, true);
+////                }
+////                if (writePermission) {
+////                    json.put(WRITE_PERMISSION, true);
+////                }
+////            } catch (JSONException e) {
+////                throw new RuntimeException(e);
+////            }
+////            return json;
+////        }
+////        /* package */ public JSONObject encode() { //THJ
+////            JSONObject json = new JSONObject();
+////
+////            try {
+////                if (readPermission) {
+////                    json.put(READ_PERMISSION, true);
+////                }
+////                if (writePermission) {
+////                    json.put(WRITE_PERMISSION, true);
+////                }
+////            } catch (JSONException e) {
+////                throw new RuntimeException(e);
+////            }
+////            return json;
+////        }
+//        public JSONObject encode() throws ParseException { //THJ copied from parse4cn1.ParseObject.java
+//            JSONObject parseData = new JSONObject();
 //            try {
 //                if (readPermission) {
-//                    json.put(READ_PERMISSION, true);
+//                    parseData.put(READ_PERMISSION, true);
 //                }
 //                if (writePermission) {
-//                    json.put(WRITE_PERMISSION, true);
+//                    parseData.put(WRITE_PERMISSION, true);
 //                }
-//            } catch (JSONException e) {
-//                throw new RuntimeException(e);
+//            } catch (JSONException ex) {
+//                throw new ParseException(ParseException.INVALID_JSON, ParseException.ERR_PROCESSING_RESPONSE, ex);
 //            }
-//            return json;
-//        }
-//        /* package */ public JSONObject encode() { //THJ
-//            JSONObject json = new JSONObject();
 //
-//            try {
-//                if (readPermission) {
-//                    json.put(READ_PERMISSION, true);
-//                }
-//                if (writePermission) {
-//                    json.put(WRITE_PERMISSION, true);
-//                }
-//            } catch (JSONException e) {
-//                throw new RuntimeException(e);
+//            if (LOGGER.isDebugEnabled()) {
+//                LOGGER.debug("parseData-> " + parseData);
 //            }
-//            return json;
+//
+//            return parseData;
 //        }
-        
-        public JSONObject encode() throws ParseException { //THJ copied from parse4cn1.ParseObject.java
-            JSONObject parseData = new JSONObject();
-            try {
-                if (readPermission) {
-                    parseData.put(READ_PERMISSION, true);
-                }
-                if (writePermission) {
-                    parseData.put(WRITE_PERMISSION, true);
-                }
-            } catch (JSONException ex) {
-                throw new ParseException(ParseException.INVALID_JSON, ParseException.ERR_PROCESSING_RESPONSE, ex);
-            }
+//
+//        /* package */ boolean getReadPermission() {
+//            return readPermission;
+//        }
+//
+//        /* package */ boolean getWritePermission() {
+//            return writePermission;
+//        }
+//
+//        /* package */ static Permissions createPermissionsFromJSONObject(JSONObject object) {
+//            boolean read = object.optBoolean(READ_PERMISSION, false);
+//            boolean write = object.optBoolean(WRITE_PERMISSION, false);
+//            return new Permissions(read, write);
+//        }
+//
+//    }
 
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("parseData-> " + parseData);
-            }
-
-            return parseData;
-        }
-
-        /* package */ boolean getReadPermission() {
-            return readPermission;
-        }
-
-        /* package */ boolean getWritePermission() {
-            return writePermission;
-        }
-
-        /* package */ static Permissions createPermissionsFromJSONObject(JSONObject object) {
-            boolean read = object.optBoolean(READ_PERMISSION, false);
-            boolean write = object.optBoolean(WRITE_PERMISSION, false);
-            return new Permissions(read, write);
-        }
+    private static ParseDefaultACLController getDefaultACLController() { //THJ, replaced by code copied from ParseCorePlugins
+        return ParseCorePlugins.getInstance().getDefaultACLController();
     }
 
-  private static ParseDefaultACLController getDefaultACLController() { //THJ, replaced by code copied from ParseCorePlugins
-    return ParseCorePlugins.getInstance().getDefaultACLController();
-  }
     /**
      * Sets a default ACL that will be applied to all {@link ParseObject}s when
      * they are created.
@@ -152,13 +190,14 @@ public class ParseACL {
      * creation. If {@code false}, the provided ACL will be used without
      * modification. If acl is {@code null}, this value is ignored.
      */
-  public static void setDefaultACL(ParseACL acl, boolean withAccessForCurrentUser) { //THJ
-    getDefaultACLController().set(acl, withAccessForCurrentUser);
-  }
+    public static void setDefaultACL(ParseACL acl, boolean withAccessForCurrentUser) { //THJ
+        getDefaultACLController().set(acl, withAccessForCurrentUser);
+    }
 //
-  /* package */ static ParseACL getDefaultACL() {
-    return getDefaultACLController().get();
-  }
+
+    /* package */ static ParseACL getDefaultACL() {
+        return getDefaultACLController().get();
+    }
     private boolean shared;
     /**
      * A lazy user that hasn't been saved to Parse.
@@ -174,6 +213,30 @@ public class ParseACL {
     public ParseACL() {
         permissionsById = new HashMap<String, Permissions>(); //new HashMap<>();
     }
+    
+        @Override
+    public int getVersion() {
+        return 0;
+    }
+
+    @Override
+    public void externalize(DataOutputStream out) throws IOException {
+        Util.writeObject(permissionsById, out);
+        Util.writeObject(shared, out);
+    }
+
+    @Override
+    public void internalize(int version, DataInputStream in) throws IOException {
+        permissionsById= (HashMap<String, Permissions>)Util.readObject(in);
+        shared = (Boolean)Util.readObject(in);
+    }
+
+    @Override
+    public String getObjectId() {
+        return CLASS_NAME;
+    }
+
+
 
     /* package */ ParseACL copy() {
         ParseACL copy = new ParseACL();
@@ -231,7 +294,6 @@ public class ParseACL {
         return json;
     }
 
-
     // A helper for creating a ParseACL from the wire.
     // We iterate over it rather than just copying to permissionsById so that we
     // can ensure it's the right format.
@@ -258,7 +320,6 @@ public class ParseACL {
 //        }
 //        return acl;
 //    }
-
     /**
      * Creates an ACL where only the provided user has access.
      *
@@ -289,7 +350,6 @@ public class ParseACL {
 //    /* package */ ParseUser getUnresolvedUser() {
 //        return unresolvedUser;
 //    }
-
     // Helper for setting stuff
     private void setPermissionsIfNonEmpty(String userId, boolean readPermission, boolean writePermission) {
         if (!(readPermission || writePermission)) {
@@ -381,14 +441,14 @@ public class ParseACL {
      * Set whether the given user is allowed to read this object.
      */
     public void setReadAccess(ParseUser user, boolean allowed) {
-        if (user.getObjectId() == null) {
+        if (user.getObjectIdP() == null) {
 //      if (user.isLazy()) {
 //        setUnresolvedReadAccess(user, allowed);
 //        return;
 //      }
             throw new IllegalArgumentException("cannot setReadAccess for a user with null id");
         }
-        setReadAccess(user.getObjectId(), allowed);
+        setReadAccess(user.getObjectIdP(), allowed);
     }
 
 //  private void setUnresolvedReadAccess(ParseUser user, boolean allowed) { //THJ
@@ -423,24 +483,24 @@ public class ParseACL {
 //    if (user.isLazy()) { //THJ
 //      return false;
 //    }
-        if (user.getObjectId() == null) {
+        if (user.getObjectIdP() == null) {
             throw new IllegalArgumentException("cannot getReadAccess for a user with null id");
         }
-        return getReadAccess(user.getObjectId());
+        return getReadAccess(user.getObjectIdP());
     }
 
     /**
      * Set whether the given user is allowed to write this object.
      */
     public void setWriteAccess(ParseUser user, boolean allowed) {
-        if (user.getObjectId() == null) {
+        if (user.getObjectIdP() == null) {
 //      if (user.isLazy()) { //THJ
 //        setUnresolvedWriteAccess(user, allowed);
 //        return;
 //      }
             throw new IllegalArgumentException("cannot setWriteAccess for a user with null id");
         }
-        setWriteAccess(user.getObjectId(), allowed);
+        setWriteAccess(user.getObjectIdP(), allowed);
     }
 
     /**
@@ -456,10 +516,10 @@ public class ParseACL {
 //    if (user.isLazy()) { //THJ
 //      return false;
 //    }
-        if (user.getObjectId() == null) {
+        if (user.getObjectIdP() == null) {
             throw new IllegalArgumentException("cannot getWriteAccess for a user with null id");
         }
-        return getWriteAccess(user.getObjectId());
+        return getWriteAccess(user.getObjectIdP());
     }
 
     /**
@@ -511,7 +571,7 @@ public class ParseACL {
     }
 
     private static void validateRoleState(ParseRole role) {
-        if (role == null || role.getObjectId() == null) {
+        if (role == null || role.getObjectIdP() == null) {
             throw new IllegalArgumentException(
                     "Roles must be saved to the server before they can be used in an ACL.");
         }

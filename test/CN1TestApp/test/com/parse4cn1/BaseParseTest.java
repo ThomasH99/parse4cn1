@@ -122,7 +122,7 @@ public class BaseParseTest extends AbstractTest {
     protected void deleteObjects(List<? extends ParseObject> objects) {
         // TODO: Replace with batch deletion when batch operations are implemented
         for (ParseObject object : objects) {
-            if (object.getObjectId() != null) {
+            if (object.getObjectIdP() != null) {
                 try {
                     object.delete();
                 } catch (ParseException ex) {

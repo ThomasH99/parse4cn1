@@ -123,6 +123,7 @@ public class Parse {
 
     private static String mApplicationId;
     private static String mClientKey;
+    private static String mApiEndpoint = null; //THJ copied from newer version
     private static final DateFormat dateFormat;
 
     static {
@@ -157,9 +158,25 @@ public class Parse {
      * Hence, the latter is not exposed via this library. The same security
      * consideration explains why the MASTER KEY is not exposed either.
      */
-    static public void initialize(String applicationId, String clientKey) {
+    static public void initialize(String apiEndpoint, String applicationId, String clientKey) {
+        mApiEndpoint = apiEndpoint; //THJ:
         mApplicationId = applicationId;
         mClientKey = clientKey;
+
+        if (mApiEndpoint != null && mApiEndpoint.endsWith("/")) {
+            mApiEndpoint = mApiEndpoint.substring(0, mApiEndpoint.length() - 2);
+        }
+
+    }
+
+    /**
+     * Retrieves the Parse API endpoint without a trailing '/'.
+     *
+     * @return The Parse backend API endpoint if one has been set or null.
+     * @see #initialize(java.lang.String, java.lang.String, java.lang.String)
+     */
+    static public String getApiEndpoint() {
+        return mApiEndpoint;
     }
 
     /**
@@ -187,7 +204,11 @@ public class Parse {
      * @return The created URL.
      */
     static public String getParseAPIUrl(String endPoint) {
-        return ParseConstants.API_ENDPOINT + "/" + ParseConstants.API_VERSION
+//        return ParseConstants.API_ENDPOINT + "/" + ParseConstants.API_VERSION
+//                + "/" + ((endPoint != null) ? endPoint : ""); 
+//        return ParseConstants.API_ENDPOINT
+        return mApiEndpoint
+                + (ParseConstants.API_VERSION.length() > 0 ? "/" + ParseConstants.API_VERSION : "") //THJ
                 + "/" + ((endPoint != null) ? endPoint : "");
     }
 
@@ -214,7 +235,7 @@ public class Parse {
     public static synchronized Date parseDate(String dateString) {
         boolean parsed = false;
         Date parsedDate = null;
-            
+
         // As at July 2015, the CN1 port for Windows Phone is not quite mature
         // For example, using the SimpleDateFormat.format() method raises an
         // org.xmlvm._nNotYetImplementedException (cf. https://groups.google.com/d/topic/codenameone-discussions/LHZeubG-sf0/discussion)
@@ -224,15 +245,14 @@ public class Parse {
         // "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" e.g. "2015-07-14T15:55:52.133Z"
         // Note that a regex-based approach is not taken because it's simply
         // not necessary and regexes will mean yet another cn1lib dependency.
-
-        if (dateString.length() == 24) { 
+        if (dateString.length() == 24) {
             try {
-                int year  = Integer.valueOf(dateString.substring(0, 4));
+                int year = Integer.valueOf(dateString.substring(0, 4));
                 int month = Integer.valueOf(dateString.substring(5, 7));
-                int day   = Integer.valueOf(dateString.substring(8, 10));
-                int hour  = Integer.valueOf(dateString.substring(11, 13));
-                int min   = Integer.valueOf(dateString.substring(14, 16));
-                int sec   = Integer.valueOf(dateString.substring(17, 19));
+                int day = Integer.valueOf(dateString.substring(8, 10));
+                int hour = Integer.valueOf(dateString.substring(11, 13));
+                int min = Integer.valueOf(dateString.substring(14, 16));
+                int sec = Integer.valueOf(dateString.substring(17, 19));
                 int milli = Integer.valueOf(dateString.substring(20, 23));
 
                 Calendar cal = Calendar.getInstance();
@@ -243,7 +263,7 @@ public class Parse {
                 cal.set(Calendar.MINUTE, min);
                 cal.set(Calendar.SECOND, sec);
                 cal.set(Calendar.MILLISECOND, milli);
-                
+
                 parsedDate = cal.getTime();
                 parsed = true;
             } catch (NumberFormatException ex) {
@@ -251,16 +271,16 @@ public class Parse {
                 parsed = false;
             }
         }
-            
+
         try {
-            if (!parsed) { 
+            if (!parsed) {
                 // Fallback to default and hope for the best
                 parsedDate = dateFormat.parse(dateString);
             }
         } catch (com.codename1.l10n.ParseException e) {
             parsedDate = null;
         }
-        
+
         return parsedDate;
     }
 
@@ -316,8 +336,12 @@ public class Parse {
                 || ((value instanceof ParseACL)) //THJ
                 || ((value instanceof Date))
                 || ((value instanceof byte[]))
-                || ((value instanceof List)) 
+                || ((value instanceof List))
                 || ((value instanceof Map));
+    }
+
+    public static boolean isEmpty(String str) { //THJ: copied from newer version of Parse, needed in ParseBatch
+        return (str == null || str.length() == 0);
     }
 
     /**

@@ -38,10 +38,10 @@ public class PointerOrLocalIdEncodingStrategy implements
     public JSONObject encodeRelatedObject(final ParseObject parseObject) throws ParseException {
         JSONObject json = new JSONObject();
         try {
-            if (parseObject.getObjectId() != null) {
+            if (parseObject.getObjectIdP() != null) {
                 json.put(ParseConstants.KEYWORD_TYPE, "Pointer");
                 json.put(ParseConstants.FIELD_CLASSNAME, parseObject.getClassName());
-                json.put(ParseConstants.FIELD_OBJECT_ID, parseObject.getObjectId());
+                json.put(ParseConstants.FIELD_OBJECT_ID, parseObject.getObjectIdP());
             } else {
                 json.put(ParseConstants.KEYWORD_TYPE, "Pointer");
                 json.put(ParseConstants.FIELD_CLASSNAME, parseObject.getClassName());

@@ -40,7 +40,7 @@ public class PointerEncodingStrategy extends PointerOrLocalIdEncodingStrategy {
 
     @Override
     public JSONObject encodeRelatedObject(ParseObject object)  throws ParseException {
-        if (object.getObjectId() == null) {
+        if (object.getObjectIdP() == null) {
             throw new IllegalStateException(
                     "unable to encode an association with an unsaved ParseObject "+object);
         }

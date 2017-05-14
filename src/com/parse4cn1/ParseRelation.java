@@ -100,7 +100,7 @@ public class ParseRelation<T extends ParseObject> {
             throw new IllegalArgumentException("Cannot add a null object");
         }
 
-        if (contains(object.getObjectId(), addedObjects)) {
+        if (contains(object.getObjectIdP(), addedObjects)) {
             return;
         }
 
@@ -128,7 +128,7 @@ public class ParseRelation<T extends ParseObject> {
             throw new IllegalArgumentException("Cannot remove a null object");
         }
 
-        if (contains(object.getObjectId(), removedObjects)) {
+        if (contains(object.getObjectIdP(), removedObjects)) {
             return;
         }
 
@@ -194,7 +194,7 @@ public class ParseRelation<T extends ParseObject> {
         }
 
         for (ParseObject object : collection) {
-            if (objectId.equals(object.getObjectId())) {
+            if (objectId.equals(object.getObjectIdP())) {
                 return true;
             }
         }

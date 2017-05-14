@@ -106,7 +106,7 @@ public class ParseACLTest extends BaseParseTest {
 
         // Retrieve
         ParseObject retrieved = ParseObject.fetch(gameScore.getClassName(),
-                gameScore.getObjectId());
+                gameScore.getObjectIdP());
         assertEqual(Integer.valueOf(1337), gameScore.getInt("score"));
         assertEqual("Sean Plott", gameScore.getString("playerName"));
         assertFalse(gameScore.getBoolean("cheatMode"));
@@ -148,7 +148,7 @@ public class ParseACLTest extends BaseParseTest {
                 = (ParseRelation<ParseObject>) retrieved.get("opponents");
         assertEqual(retrievedRelation.getTargetClass(), opponent.getClassName());
 
-        retrieved = ParseObject.fetch(retrieved.getClassName(), retrieved.getObjectId());
+        retrieved = ParseObject.fetch(retrieved.getClassName(), retrieved.getObjectIdP());
         retrievedRelation = (ParseRelation<ParseObject>) retrieved.getRelation("opponents");
         assertNotNull(retrievedRelation);
         assertEqual(retrievedRelation.getTargetClass(), opponent.getClassName());
@@ -218,7 +218,7 @@ public class ParseACLTest extends BaseParseTest {
         obj.save();
         skills.removeAll(extraSkills);
 
-        final ParseObject retrieved = ParseObject.fetch(obj.getClassName(), obj.getObjectId());
+        final ParseObject retrieved = ParseObject.fetch(obj.getClassName(), obj.getObjectIdP());
         assertEqual(skills, retrieved.getList(fieldSkills),
                 "All extra skills (" + extraSkills.toString() + ") are removed");
     }
@@ -249,13 +249,13 @@ public class ParseACLTest extends BaseParseTest {
         obj.save();
 
         assertNotNull(obj.getCreatedAt(), "Creation time not set");
-        assertNotNull(obj.getObjectId(), "Object ID not set");
+        assertNotNull(obj.getObjectIdP(), "Object ID not set");
         assertEqual(obj.getCreatedAt(), obj.getUpdatedAt(), "Creation time should equal update time for new object");
 
-        ParseObject retrieved = ParseObject.fetch(obj.getClassName(), obj.getObjectId());
+        ParseObject retrieved = ParseObject.fetch(obj.getClassName(), obj.getObjectIdP());
         assertEqual(obj.getCreatedAt(), retrieved.getCreatedAt());
         assertEqual(obj.getUpdatedAt(), retrieved.getUpdatedAt());
-        assertEqual(obj.getObjectId(), retrieved.getObjectId());
+        assertEqual(obj.getObjectIdP(), retrieved.getObjectIdP());
         checkData(retrieved, data);
     }
 
@@ -281,7 +281,7 @@ public class ParseACLTest extends BaseParseTest {
         obj.save();
 
         checkData(obj, data);
-        ParseObject retrieved = ParseObject.fetch(obj.getClassName(), obj.getObjectId());
+        ParseObject retrieved = ParseObject.fetch(obj.getClassName(), obj.getObjectIdP());
         checkData(retrieved, data);
 
         data.clear();
@@ -306,7 +306,7 @@ public class ParseACLTest extends BaseParseTest {
 
         retrieved.save(); // Update
         checkData(retrieved, data);
-        retrieved = ParseObject.fetch(obj.getClassName(), obj.getObjectId());
+        retrieved = ParseObject.fetch(obj.getClassName(), obj.getObjectIdP());
         checkData(retrieved, data);
     }
 
@@ -364,7 +364,7 @@ public class ParseACLTest extends BaseParseTest {
 
         assertNotNull(obj, "Class CustomParseObject should be instantiable");
         final CustomParseObject retrieved = ParseObject.fetch(
-                CustomParseObject.CLASS_NAME, obj.getObjectId());
+                CustomParseObject.CLASS_NAME, obj.getObjectIdP());
         assertNotNull(retrieved, "Saved custom object should be retrievable");
         assertEqual("test", retrieved.getString("purpose"));
         assertEqual("ReadOnly", retrieved.getString(CustomParseObject.CUSTOM_FIELD_NAME));
